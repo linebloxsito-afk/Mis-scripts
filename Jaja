@@ -1,0 +1,173 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local currentTarget = nil
+
+local function CrearGUICuadrada()
+    if player.PlayerGui:FindFirstChild("AdminCuadrado") then
+        player.PlayerGui.AdminCuadrado:Destroy()
+    end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AdminCuadrado"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Name = "Panel"
+    frame.Size = UDim2.new(0, 340, 0, 380)
+    frame.Position = UDim2.new(0.5, -170, 0.5, -190)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.BackgroundColor3 = Color3.fromRGB(0, 80, 180)
+    title.Text = "ADMIN PANEL"
+    title.TextColor3 = Color3.new(1,1,1)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+    title.Parent = frame
+
+    -- Botones principales
+    local actions = {
+        {text = "Matar",    color = Color3.fromRGB(180, 0, 0),     action = "Kill"},
+        {text = "Revivir",  color = Color3.fromRGB(0, 180, 0),     action = "Revive"},
+        {text = "Congelar", color = Color3.fromRGB(255, 140, 0),   action = "Freeze"},
+        {text = "Banear",   color = Color3.fromRGB(100, 0, 0),     action = "Ban"},
+    }
+
+    for i, act in ipairs(actions) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.45, 0, 0.2, 0)
+        btn.Position = UDim2.new((i-1)%2 == 0 and 0.05 or 0.52, 0, 0.18 + math.floor((i-1)/2) * 0.25, 0)
+        btn.BackgroundColor3 = act.color
+        btn.Text = act.text
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.TextScaled = true
+        btn.Font = Enum.Font.GothamSemibold
+        btn.Parent = frame
+
+        btn.MouseButton1Click:Connect(function()
+            currentTarget = nil
+            MostrarListaJugadores(act.action, act.text)
+        end)
+    end
+end
+
+-- Función para mostrar lista de jugadores
+function MostrarListaJugadores(action, actionName)
+    local listFrame = Instance.new("Frame")
+    listFrame.Name = "PlayerList"
+    listFrame.Size = UDim2.new(0, 300, 0, 400)
+    listFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    listFrame.Parent = player.PlayerGui.AdminCuadrado
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+    title.Text = actionName .. " a..."
+    title.TextColor3 = Color3.new(1,1,1)
+    title.TextScaled = true
+    title.Parent = listFrame
+
+    -- Botón "Todos"
+    local allBtn = Instance.new("TextButton")
+    allBtn.Size = UDim2.new(0.9, 0, 0, 50)
+    allBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+    allBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    allBtn.Text = "TODOS"
+    allBtn.TextScaled = true
+    allBtn.Parent = listFrame
+
+    allBtn.MouseButton1Click:Connect(function()
+        AplicarAccion(action, "All")
+        listFrame:Destroy()
+    end)
+
+    -- Lista de jugadores
+    local yPos = 0.3
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p \~= player then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(0.9, 0, 0, 40)
+            btn.Position = UDim2.new(0.05, 0, yPos, 0)
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.Text = p.Name
+            btn.TextColor3 = Color3.new(1,1,1)
+            btn.TextScaled = true
+            btn.Parent = listFrame
+
+            btn.MouseButton1Click:Connect(function()
+                AplicarAccion(action, p)
+                listFrame:Destroy()
+            end)
+
+            yPos = yPos + 0.1
+        end
+    end
+end
+
+-- Función que aplica la acción
+function AplicarAccion(action, target)
+    if action == "Kill" then
+        if target == "All" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Humanoid") then
+                    p.Character.Humanoid.Health = 0
+                end
+            end
+        else
+            if target.Character and target.Character:FindFirstChild("Humanoid") then
+                target.Character.Humanoid.Health = 0
+            end
+        end
+
+    elseif action == "Revive" then
+        if target == "All" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                p:LoadCharacter()
+            end
+        else
+            target:LoadCharacter()
+        end
+
+    elseif action == "Freeze" then
+        if target == "All" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Humanoid") then
+                    p.Character.Humanoid.WalkSpeed = 0
+                    p.Character.Humanoid.JumpPower = 0
+                end
+            end
+        else
+            if target.Character and target.Character:FindFirstChild("Humanoid") then
+                target.Character.Humanoid.WalkSpeed = 0
+                target.Character.Humanoid.JumpPower = 0
+            end
+        end
+
+    elseif action == "Ban" then
+        if target == "All" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player then
+                    p:Kick("Has sido baneado por el administrador.")
+                end
+            end
+        else
+            target:Kick("Has sido baneado por el administrador.")
+        end
+    end
+end
+
+-- Iniciar
+CrearGUICuadrada()
+
+player.CharacterAdded:Connect(function()
+    task.wait(1.5)
+    CrearGUICuadrada()
+end)
+
+print("✅ GUI con selector de jugadores lista")
